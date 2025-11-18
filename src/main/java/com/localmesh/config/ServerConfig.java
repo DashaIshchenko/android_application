@@ -4,6 +4,10 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class ServerConfig {
+	private static final int DEFAULT_PORT = 8887;
+	private static final int DEFAULT_MAX_CONNECTIONS = 100;
+	private static final boolean DEFAULT_BROADCAST = true;
+	
 	private final int port;
 	private final int maxConnections;
 	private final boolean broadcast;
@@ -15,9 +19,9 @@ public class ServerConfig {
 		} catch (Exception e) {
 			System.err.println("Failed to load config.properties: " + e.getMessage());
 		}
-		this.port = Integer.parseInt(p.getProperty("server.port", "8887"));
-		this.maxConnections = Integer.parseInt(p.getProperty("server.maxConnections", "100"));
-		this.broadcast = Boolean.parseBoolean(p.getProperty("server.broadcast", "true"));
+		this.port = Integer.parseInt(p.getProperty("server.port", String.valueOf(DEFAULT_PORT)));
+		this.maxConnections = Integer.parseInt(p.getProperty("server.maxConnections", String.valueOf(DEFAULT_MAX_CONNECTIONS)));
+		this.broadcast = Boolean.parseBoolean(p.getProperty("server.broadcast", String.valueOf(DEFAULT_BROADCAST)));
 	}
 
 	public int getPort() { return port; }

@@ -66,15 +66,61 @@ public class WebSocketChatServer extends WebSocketServer {
 				return;
 			}
 			
+			if ("sos".equals(action) || "SOS".equalsIgnoreCase((String) incoming.get("type"))) {
+				User u = clients.get(conn); //определяем отправителя и его координаты
+				if (u == null) {
+					conn.send(JsonUtil.toJson(Collections.singletonMap("error", "unknown user")));
+					return;
+				}
+
+				// пробуем извлечь координаты из payload (опционально клиент может не прислать их, тогда используются последние известные)
+				Double lat = incoming.get("latitude") instanceof Number ? ((Number) incoming.get("latitude")).doubleValue() : null;
+				Double lon = incoming.get("longitude") instanceof Number ? ((Number) incoming.get("longitude")).doubleValue() : null;
+
+				if (lat != null && lon != null) {
+					if (!isValidLatitude(lat) || !isValidLongitude(lon)) {
+						conn.send(JsonUtil.toJson(Collections.singletonMap("error", "invalid coordinates")));
+						return;
+					}
+					u.setLatitude(lat);
+					u.setLongitude(lon);
+					u.setLastUpdate(System.currentTimeMillis());
+				}
+
+				Message sosMsg = new Message();
+				sosMsg.setFromUserId(u.getId());
+				sosMsg.setFromUserName(u.getName());
+				sosMsg.setTimestamp(System.currentTimeMillis());
+				sosMsg.setType(Message.Type.SOS);
+				sosMsg.setLatitude(u.getLatitude());
+				sosMsg.setLongitude(u.getLongitude());
+				sosMsg.setText((String) incoming.getOrDefault("text", "SOS"));
+
+				System.err.println("[SOS] user=" + u.getId() + " name=" + u.getName() + " lat=" + sosMsg.getLatitude() + " lon=" + sosMsg.getLongitude() + " time=" + sosMsg.getTimestamp());
+
+				broadcast(JsonUtil.toJson(sosMsg));
+				return;
+			}
+			
 			if ("location".equals(action) || "location_update".equals(action)) {
 				// Ожидаем payload: { action: "location", latitude: 12.34, longitude: 56.78 }
 				Double lat = incoming.get("latitude") instanceof Number ? ((Number) incoming.get("latitude")).doubleValue() : null;
 				Double lon = incoming.get("longitude") instanceof Number ? ((Number) incoming.get("longitude")).doubleValue() : null;
 				User u = clients.get(conn);
 				if (u != null && lat != null && lon != null) {
+					if (!isValidLatitude(lat) || !isValidLongitude(lon)) {
+						conn.send(JsonUtil.toJson(Collections.singletonMap("error", "invalid coordinates")));
+						return;
+					}
+
+					long now = System.currentTimeMillis();
+					if (now - u.getLastUpdate() < LOCATION_THROTTLE_MS) {
+						return;
+					}
+
 					u.setLatitude(lat);
 					u.setLongitude(lon);
-					u.setLastUpdate(System.currentTimeMillis());
+					u.setLastUpdate(now);
 
 					Message locMsg = new Message();
 					locMsg.setFromUserId(u.getId());
@@ -89,8 +135,8 @@ public class WebSocketChatServer extends WebSocketServer {
 					broadcastUserList();
 					return;
 				} else {
-				conn.send(JsonUtil.toJson(Collections.singletonMap("error", "invalid location payload")));
-				return;
+					conn.send(JsonUtil.toJson(Collections.singletonMap("error", "invalid location payload")));
+					return;
 				}
 			}
 			conn.send(JsonUtil.toJson(Collections.singletonMap("error", "unknown action")));
@@ -123,5 +169,14 @@ public class WebSocketChatServer extends WebSocketServer {
 		}
 		users.put("users", list);
 		broadcast(JsonUtil.toJson(users));
+	}
+	
+	private boolean isValidLatitude(double lat) {
+		return lat >= -90.0 && lat <= 90.0;
+	}
+
+
+	private boolean isValidLongitude(double lon) {
+		return lon >= -180.0 && lon <= 180.0;
 	}
 }
