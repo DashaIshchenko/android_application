@@ -9,6 +9,8 @@ public class Message {
 	private String text;
 	private long timestamp;
 	private Type type = Type.TEXT;
+	private Double latitude;
+	private Double longitude;
 
 	public Message() {}
 
@@ -24,4 +26,8 @@ public class Message {
 	public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
 	public Type getType() { return type; }
 	public void setType(Type type) { this.type = type; }
+	public Double getLatitude() { return latitude; }
+	public void setLatitude(Double latitude) { this.latitude = latitude; }
+	public Double getLongitude() { return longitude; }
+	public void setLongitude(Double longitude) { this.longitude = longitude; }
 }
