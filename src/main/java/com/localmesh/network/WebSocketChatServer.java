@@ -24,6 +24,11 @@ public class WebSocketChatServer extends WebSocketServer {
 	public WebSocketChatServer(ServerConfig cfg) {
 		super(new InetSocketAddress(cfg.getPort()));
 		this.cfg = cfg;
+		try {
+			new HttpWebInterface(8081, clients, storage);
+		} catch (IOException e) {
+			System.err.println("Failed to start HTTP web interface: " + e getMessage());
+		}
 	}
 
 	@Override
@@ -140,7 +145,6 @@ public class WebSocketChatServer extends WebSocketServer {
 			}
 			
 			if ("location".equals(action) || "location_update".equals(action)) {
-				// Ожидаем payload: { action: "location", latitude: 12.34, longitude: 56.78 }
 				Double lat = incoming.get("latitude") instanceof Number ? ((Number) incoming.get("latitude")).doubleValue() : null;
 				Double lon = incoming.get("longitude") instanceof Number ? ((Number) incoming.get("longitude")).doubleValue() : null;
 				User u = clients.get(conn);
@@ -171,7 +175,7 @@ public class WebSocketChatServer extends WebSocketServer {
 
 					broadcastUserList();
 					return;
-				} else {
+					} else {
 					conn.send(JsonUtil.toJson(Collections.singletonMap("error", "invalid location payload")));
 					return;
 				}
