@@ -4,6 +4,7 @@ import com.localmesh.config.ServerConfig;
 import com.localmesh.model.Message;
 import com.localmesh.model.User;
 import com.localmesh.utils.JsonUtil;
+import com.localmesh.storage.MessageStorage;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -18,7 +19,8 @@ public class WebSocketChatServer extends WebSocketServer {
 	private final Map<WebSocket, User> clients = new ConcurrentHashMap<>();
 	private final ServerConfig cfg;
 	private final AtomicInteger connections = new AtomicInteger(0);
-
+	private final MessageStorage storage = new MessageStorage();
+	
 	public WebSocketChatServer(ServerConfig cfg) {
 		super(new InetSocketAddress(cfg.getPort()));
 		this.cfg = cfg;
@@ -34,6 +36,11 @@ public class WebSocketChatServer extends WebSocketServer {
 		// ПОЛЬЗОВАТЕЛЕЙ ПОКА ЧТО НЕТ
 		User u = new User("anonymous");
 		clients.put(conn, u);
+		// отправим новому клиенту историю сообщений (как единый payload типа "history")
+		java.util.Map<String,Object> histPayload = new java.util.HashMap<>();
+		histPayload.put("type", "history");
+		histPayload.put("messages", storage.getHistory());
+		conn.send(JsonUtil.toJson(histPayload));
 		System.out.println("New connection: " + conn.getRemoteSocketAddress());
 	}
 
@@ -62,6 +69,9 @@ public class WebSocketChatServer extends WebSocketServer {
 			if ("message".equals(action)) {
 				Message msg = JsonUtil.fromJson(message, Message.class);
 				msg.setTimestamp(System.currentTimeMillis());
+				if (msg.getType() == null || msg.getType() == Message.Type.TEXT || msg.getType() == Message.Type.SOS) {
+					storage.addMessage(msg);
+				}
 				broadcast(JsonUtil.toJson(msg));
 				return;
 			}
