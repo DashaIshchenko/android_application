@@ -35,20 +35,39 @@ public class WebSocketChatServer extends WebSocketServer {
 		}
 		// ПОЛЬЗОВАТЕЛЕЙ ПОКА ЧТО НЕТ
 		User u = new User("anonymous");
+		u.setStatus(User.Status.ONLINE);
+		u.setLastSeen(System.currentTimeMillis());
 		clients.put(conn, u);
+		System.out.println("New connection: " + conn.getRemoteSocketAddress() + " assignedId=" + u.getId());
+		
+		// кидаем клиенту id (информация)
+		java.util.Map<String,Object> welcome = new java.util.HashMap<>();
+		welcome.put("type", "welcome");
+		welcome.put("userId", u.getId());
+		welcome.put("name", u.getName());
+		conn.send(JsonUtil.toJson(welcome));
+		
 		// отправим новому клиенту историю сообщений (как единый payload типа "history")
 		java.util.Map<String,Object> histPayload = new java.util.HashMap<>();
 		histPayload.put("type", "history");
 		histPayload.put("messages", storage.getHistory());
 		conn.send(JsonUtil.toJson(histPayload));
-		System.out.println("New connection: " + conn.getRemoteSocketAddress());
+		
+		broadcastUserList();
 	}
 
 	@Override
 	public void onClose(WebSocket conn, int code, String reason, boolean remote) {
 		User u = clients.remove(conn);
 		connections.decrementAndGet();
-		System.out.println("Connection closed: " + (u != null ? u.getId() : "unknown") + " reason=" + reason);
+		if (u != null) {
+			u.setStatus(User.Status.OFFLINE);
+			u.setLastSeen(System.currentTimeMillis());
+			System.out.println("Connection closed: " + u.getId() + " reason=" + reason);
+		} else {
+			System.out.println("Connection closed: unknown reason=" + reason);
+		}
+		broadcastUserList();
 	}
 
 	@Override
@@ -60,8 +79,16 @@ public class WebSocketChatServer extends WebSocketServer {
 			if ("register".equals(action)) { // СЕЙЧАС ТОЛЬКО REGISTER
 				String name = (String) incoming.getOrDefault("name", "anonymous");
 				User u = clients.get(conn);
-				if (u != null) u.setName(name);
-				conn.send(JsonUtil.toJson(Collections.singletonMap("type", "registered")));
+				if (u != null) {
+					u.setName(name);
+					u.setStatus(User.Status.ONLINE);
+					u.setLastSeen(System.currentTimeMillis());
+				}
+				java.util.Map<String,Object> resp = new java.util.HashMap<>();
+				resp.put("type", "registered");
+				resp.put("userId", u != null ? u.getId() : null);
+				resp.put("name", name);
+				conn.send(JsonUtil.toJson(resp));
 				broadcastUserList();
 				return;
 			}
@@ -175,6 +202,8 @@ public class WebSocketChatServer extends WebSocketServer {
 			item.put("latitude", u.getLatitude());
 			item.put("longitude", u.getLongitude());
 			item.put("lastUpdate", u.getLastUpdate());
+			item.put("status", u.getStatus().name());
+			item.put("lastSeen", u.getLastSeen());
 			list.add(item);
 		}
 		users.put("users", list);

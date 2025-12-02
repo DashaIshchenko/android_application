@@ -5,8 +5,8 @@ import java.util.Properties;
 
 public class ServerConfig {
 	private static final int DEFAULT_PORT = 8887;
-	private static final int DEFAULT_MAX_CONNECTIONS = 100;
-	private static final boolean DEFAULT_BROADCAST = true;
+    private static final int DEFAULT_MAX_CONNECTIONS = 100;
+    private static final boolean DEFAULT_BROADCAST = true;
 	
 	private final int port;
 	private final int maxConnections;
