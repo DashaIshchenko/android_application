@@ -13,19 +13,107 @@
         android:textStyle="bold"
         android:layout_marginBottom="16dp"/>
     
-    <EditText
-        android:id="@+id/messageEditText"
+ <!-- Панель ввода сообщения с кнопкой прикрепления -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Введите сообщение..."
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@android:color/white"
+        android:elevation="4dp"
+        android:layout_marginBottom="8dp">
+
+        <!-- Кнопка прикрепления файла -->
+        <ImageButton
+            android:id="@+id/btnAttachFile"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_attachment"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Прикрепить файл"
+            android:tint="#2196F3" />
+
+        <!-- Поле ввода сообщения -->
+        <EditText
+            android:id="@+id/messageEditText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Введите сообщение..."
+            android:inputType="textMultiLine"
+            android:maxLines="3"
+            android:padding="12dp" />
+
+        <!-- Кнопка отправки -->
+        <ImageButton
+            android:id="@+id/btnSend"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_send"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Отправить"
+            android:tint="#4CAF50" />
+
+    </LinearLayout>
+
+    <!-- Прогресс-бар для загрузки файлов -->
+    <ProgressBar
+        android:id="@+id/progressBarFileUpload"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:visibility="gone"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:progressTint="#2196F3"
         android:layout_marginBottom="8dp"/>
-    
-    <Button
-        android:id="@+id/sendButton"
+
+    <!-- Панель выбранного файла -->
+    <LinearLayout
+        android:id="@+id/layoutSelectedFile"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Отправить сообщение"
-        android:layout_marginBottom="8dp"/>
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="#E3F2FD"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:id="@+id/iconFileType"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:tint="#2196F3" />
+
+        <TextView
+            android:id="@+id/textFileName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Файл.jpg"
+            android:textSize="14sp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/textFileSize"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1.2 MB"
+            android:textSize="12sp"
+            android:textColor="#757575"
+            android:layout_marginEnd="12dp" />
+
+        <ImageButton
+            android:id="@+id/btnRemoveFile"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:tint="#F44336" />
+
+    </LinearLayout>
     
     <Button
         android:id="@+id/sosButton"
