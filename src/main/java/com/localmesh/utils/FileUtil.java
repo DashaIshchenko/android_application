@@ -199,5 +199,145 @@ public class FileUtil {
         
         Toast.makeText(context, message, Toast.LENGTH_LONG).show();
     }
- 
+/////////////////////
+    public static String getPathFromUri(Context context, Uri uri) {
+        if (uri == null) return null;
+        
+        String scheme = uri.getScheme();
+        if (scheme == null) return null;
+        if ("file".equals(scheme)) {
+            return uri.getPath();
+        }
+        if ("content".equals(scheme)) {
+            try {
+                String[] projection = { "_data" };
+                try (Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null)) {
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int columnIndex = cursor.getColumnIndexOrThrow("_data");
+                        String path = cursor.getString(columnIndex);
+                        if (path != null) {
+                            return path;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Не удалось получить путь через _data", e);
+            }
+            return copyFileToTemp(context, uri);
+        }
+        return null;
+    }
+    
+
+    private static String copyFileToTemp(Context context, Uri uri) {
+        InputStream inputStream = null;
+        FileOutputStream outputStream = null;
+        
+        try {
+            String fileName = getFileNameFromUri(context, uri);
+            if (fileName == null) {
+                fileName = "file_" + System.currentTimeMillis();
+            }
+
+            File tempFile = new File(context.getCacheDir(), fileName);
+
+            inputStream = context.getContentResolver().openInputStream(uri);
+            outputStream = new FileOutputStream(tempFile);
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            
+            Log.d(TAG, "Файл скопирован во временную папку: " + tempFile.getAbsolutePath());
+            return tempFile.getAbsolutePath();
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка копирования файла из Uri", e);
+            return null;
+        } finally {
+            try {
+                if (inputStream != null) inputStream.close();
+                if (outputStream != null) outputStream.close();
+            } catch (IOException e) {
+                Log.e(TAG, "Ошибка закрытия потоков", e);
+            }
+        }
+    }
+    
+    public static String getFileNameFromUri(Context context, Uri uri) {
+        if (uri == null) return null;
+        
+        String result = null;
+
+        if ("content".equals(uri.getScheme())) {
+            try (Cursor cursor = context.getContentResolver().query(
+                    uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    String[] columnNames = {
+                        MediaStore.MediaColumns.DISPLAY_NAME,
+                        OpenableColumns.DISPLAY_NAME,
+                        "_display_name"
+                    };
+                    
+                    for (String column : columnNames) {
+                        int index = cursor.getColumnIndex(column);
+                        if (index != -1) {
+                            result = cursor.getString(index);
+                            if (result != null) break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Ошибка получения имени файла из Uri", e);
+            }
+        }
+        if (result == null) {
+            String path = uri.getPath();
+            if (path != null) {
+                int lastSlash = path.lastIndexOf('/');
+                result = (lastSlash != -1) ? path.substring(lastSlash + 1) : path;
+            }
+        }
+        
+        return result;
+    }
+
+    public static String getSimplePathFromUri(Context context, Uri uri) {
+        try {
+            return copyFileToTemp(context, uri);
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка получения пути", e);
+            return null;
+        }
+    }
+
+    public static boolean isImageFile(String filePath) {
+        if (filePath == null) return false;
+        String type = getFileType(filePath);
+        return "image".equals(type);
+    }
+
+    public static boolean isAudioFile(String filePath) {
+        if (filePath == null) return false;
+        String type = getFileType(filePath);
+        return "audio".equals(type);
+    }
+    
+
+    public static String processFileForSending(String filePath, int maxImageSizeKB) {
+        if (filePath == null) return null;
+        
+        try {
+            if (isImageFile(filePath)) {
+                return compressImageToBase64(filePath);
+            } else {
+                return fileToBase64(filePath);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка обработки файла для отправки", e);
+            return null;
+        }
+    }
 }
