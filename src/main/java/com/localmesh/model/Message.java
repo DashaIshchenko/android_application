@@ -1,7 +1,7 @@
 package com.localmesh.model;
 
 public class Message {
-	public enum Type { TEXT, LOCATION_UPDATE, SOS }
+	public enum Type { TEXT, LOCATION_UPDATE, SOS, FILE }
 
 	private String id;
 	private String fromUserId;
@@ -11,6 +11,11 @@ public class Message {
 	private Type type = Type.TEXT;
 	private Double latitude;
 	private Double longitude;
+	private String fileType;    
+	private String fileName;    
+	private String fileData;    
+
+	private Boolean encrypted = false;
 
 	public Message() {}
 
@@ -30,4 +35,13 @@ public class Message {
 	public void setLatitude(Double latitude) { this.latitude = latitude; }
 	public Double getLongitude() { return longitude; }
 	public void setLongitude(Double longitude) { this.longitude = longitude; }
+
+	public String getFileType() { return fileType; }
+	public void setFileType(String fileType) { this.fileType = fileType; }
+	public String getFileName() { return fileName; }
+	public void setFileName(String fileName) { this.fileName = fileName; }
+	public String getFileData() { return fileData; }
+	public void setFileData(String fileData) { this.fileData = fileData; }
+	public Boolean isEncrypted() { return encrypted; }
+	public void setEncrypted(Boolean encrypted) { this.encrypted = encrypted; }
 }

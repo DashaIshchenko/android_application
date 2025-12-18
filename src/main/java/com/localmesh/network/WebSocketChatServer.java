@@ -110,6 +110,23 @@ public class WebSocketChatServer extends WebSocketServer {
 				broadcast(JsonUtil.toJson(msg));
 				return;
 			}
+			// Обработка файлов
+			if ("file".equals(action)) {
+				Message fileMsg = JsonUtil.fromJson(message, Message.class);
+				fileMsg.setTimestamp(System.currentTimeMillis());
+				    if (fileMsg.getType() == null) {
+						fileMsg.setType(Message.Type.FILE);
+					}
+				    User sender = clients.get(conn);
+    
+				(sender != null ? sender.getId() : "unknown") + 
+					" fileName=" + fileMsg.getFileName() + 
+					" fileType=" + fileMsg.getFileType() + 
+					" size=" + (fileMsg.getFileData() != null ? fileMsg.getFileData().length() : 0) + " chars");
+				storage.addMessage(fileMsg);
+				broadcast(JsonUtil.toJson(fileMsg));
+				return;
+			}
 			
 			if ("sos".equals(action) || "SOS".equalsIgnoreCase((String) incoming.get("type"))) {
 				User u = clients.get(conn); //определяем отправителя и его координаты
