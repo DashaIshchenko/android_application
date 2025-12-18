@@ -19,6 +19,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class WebSocketChatServer extends WebSocketServer {
 	private final Map<WebSocket, User> clients = new ConcurrentHashMap<>();
+	private final ConcurrentMap<String, Message> pendingAcks = new ConcurrentHashMap<>();
+	private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+	
 	private final ServerConfig cfg;
 	private final AtomicInteger connections = new AtomicInteger(0);
 	private final MessageStorage storage = new MessageStorage();
@@ -26,6 +29,7 @@ public class WebSocketChatServer extends WebSocketServer {
 	
 	public WebSocketChatServer(ServerConfig cfg) {
 		super(new InetSocketAddress(cfg.getPort()));
+		scheduler.scheduleAtFixedRate(this::retryUnackedMessages, 5, 5, TimeUnit.SECONDS);
 		this.cfg = cfg;
 		try {
 			new HttpWebInterface(8081, clients, storage);
@@ -84,7 +88,7 @@ public class WebSocketChatServer extends WebSocketServer {
 			Map incoming = JsonUtil.fromJson(message, Map.class);
 			String action = (String) incoming.get("action");
 			
-			if ("register".equals(action)) { // СЕЙЧАС ТОЛЬКО REGISTER
+			if ("register".equals(action)) {
 				String name = (String) incoming.getOrDefault("name", "anonymous");
 				User u = clients.get(conn);
 				if (u != null) {
@@ -100,9 +104,15 @@ public class WebSocketChatServer extends WebSocketServer {
 				broadcastUserList();
 				return;
 			}
+			if ("ack".equals(action)) {
+				pendingAcks.remove(msg.getAckForMessageId());
+				return;
+			}
 			
 			if ("message".equals(action)) {
 				Message msg = JsonUtil.fromJson(message, Message.class);
+				msg.setAckRequired(true);
+				pendingAcks.put(msg.getId(), msg);
 				msg.setTimestamp(System.currentTimeMillis());
 				if (msg.getType() == null || msg.getType() == Message.Type.TEXT || msg.getType() == Message.Type.SOS) {
 					storage.addMessage(msg);
@@ -232,6 +242,21 @@ public class WebSocketChatServer extends WebSocketServer {
 		}
 		users.put("users", list);
 		broadcast(JsonUtil.toJson(users));
+	}
+	
+	private void retryUnackedMessages() {
+		long now = System.currentTimeMillis();
+		for (Message msg : pendingAcks.values()) {
+			if (now - msg.getTimestamp() > 5000) {
+				broadcast(JsonUtil.toJson(msg));
+			}
+		}
+	}
+	
+	private void broadcast(String json) {
+		for (WebSocket ws : clients.keySet()) {
+			ws.send(json);
+		}
 	}
 	
 	private boolean isValidLatitude(double lat) {

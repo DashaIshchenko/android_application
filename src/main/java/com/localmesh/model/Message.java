@@ -1,7 +1,7 @@
 package com.localmesh.model;
 
 public class Message {
-	public enum Type { TEXT, LOCATION_UPDATE, SOS, FILE }
+	public enum Type { TEXT, LOCATION_UPDATE, SOS, FILE, ACK }
 
 	private String id;
 	private String fromUserId;
@@ -14,7 +14,8 @@ public class Message {
 	private String fileType;    
 	private String fileName;    
 	private String fileData;    
-
+	private boolean ackRequired = false;
+	private String ackForMessageId;
 	private Boolean encrypted = false;
 
 	public Message() {}
@@ -44,4 +45,9 @@ public class Message {
 	public void setFileData(String fileData) { this.fileData = fileData; }
 	public Boolean isEncrypted() { return encrypted; }
 	public void setEncrypted(Boolean encrypted) { this.encrypted = encrypted; }
+	
+	public boolean isAckRequired() { return ackRequired; }
+	public void setAckRequired(boolean ackRequired) { this.ackRequired = ackRequired; }
+	public String getAckForMessageId() { return ackForMessageId; }
+	public void setAckForMessageId(String ackForMessageId) { this.ackForMessageId = ackForMessageId; }
 }
